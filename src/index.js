@@ -5,6 +5,7 @@ import {
   listTasks,
   updateTask
 } from './services/taskService.js';
+import { formatTask, formatTaskList } from './utils/colors.js';
 
 /**
  * Demonstrates Task Manager features from the command line.
@@ -29,24 +30,24 @@ function main() {
       status: 'todo',
       priority: 'low'
     });
-    console.log(taskA);
-    console.log(taskB);
-    console.log(taskC);
+    console.log(formatTask(taskA));
+    console.log(formatTask(taskB));
+    console.log(formatTask(taskC));
 
     console.log('\nList all tasks');
-    console.log(listTasks());
+    console.log(formatTaskList(listTasks()));
 
     console.log('\nFilter by status: todo');
-    console.log(listTasks({ status: 'todo' }));
+    console.log(formatTaskList(listTasks({ status: 'todo' })));
 
     console.log('\nFilter by priority: high');
-    console.log(listTasks({ priority: 'high' }));
+    console.log(formatTaskList(listTasks({ priority: 'high' })));
 
     console.log('\nSort by priority (high to low)');
-    console.log(listTasks({ sortBy: 'priority', direction: 'desc' }));
+    console.log(formatTaskList(listTasks({ sortBy: 'priority', direction: 'desc' })));
 
     console.log('\nSort by creation date (oldest first)');
-    console.log(listTasks({ sortBy: 'createdAt', direction: 'asc' }));
+    console.log(formatTaskList(listTasks({ sortBy: 'createdAt', direction: 'asc' })));
 
     console.log('\nUpdate first task');
     const updatedTask = updateTask(taskA.id, {
@@ -54,16 +55,16 @@ function main() {
       priority: 'medium',
       description: 'Plan reviewed and finalized.'
     });
-    console.log(updatedTask);
+    console.log(formatTask(updatedTask));
 
     console.log('\nGet updated task by id');
-    console.log(getTaskById(taskA.id));
+    console.log(formatTask(getTaskById(taskA.id)));
 
     console.log('\nDelete one task');
-    console.log(deleteTask(taskB.id));
+    console.log(formatTask(deleteTask(taskB.id)));
 
     console.log('\nList tasks after deletion');
-    console.log(listTasks());
+    console.log(formatTaskList(listTasks()));
   } catch (error) {
     console.error('Task Manager demo failed:', error.message);
     process.exitCode = 1;

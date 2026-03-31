@@ -51,6 +51,7 @@ export function colorPriority(priority) {
  * @param {string} task.title     - Task title.
  * @param {string} task.status    - Task status.
  * @param {string} task.priority  - Task priority.
+ * @param {string} task.category - Task category.
  * @param {string} task.description - Task description.
  * @returns {string} A formatted multi-line string ready for console output.
  * @example formatTask(task) // returns colored multi-line task summary
@@ -62,6 +63,7 @@ export function formatTask(task) {
     `  description: ${task.description}`,
     `  status:      ${colorStatus(task.status)}`,
     `  priority:    ${colorPriority(task.priority)}`,
+    `  category:    ${task.category}`,
     `  createdAt:   ${new Date(task.createdAt).toISOString()}`,
     `  updatedAt:   ${new Date(task.updatedAt).toISOString()}`,
   ].join('\n');
@@ -78,6 +80,6 @@ export function formatTask(task) {
 export function formatTaskList(tasks) {
   if (tasks.length === 0) return '  (no tasks)';
   return tasks
-    .map((t, i) => `[${i + 1}] ${chalk.bold(t.title)}  status=${colorStatus(t.status)}  priority=${colorPriority(t.priority)}  id=${t.id}`)
+    .map((t, i) => `[${i + 1}] ${chalk.bold(t.title)}  status=${colorStatus(t.status)}  priority=${colorPriority(t.priority)}  category=${t.category}  id=${t.id}`)
     .join('\n');
 }

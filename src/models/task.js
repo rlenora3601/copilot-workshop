@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  validateCategory,
   validateDescription,
   validatePriority,
   validateStatus,
@@ -21,6 +22,7 @@ export class Task {
    * @param {string} [input.description] - Task description.
    * @param {string} [input.status] - Task status.
    * @param {string} [input.priority] - Task priority.
+  * @param {string} [input.category] - Task category.
    * @param {string} [input.createdAt] - ISO timestamp for creation.
    * @param {string} [input.updatedAt] - ISO timestamp for last update.
    */
@@ -36,6 +38,7 @@ export class Task {
     this.description = validateDescription(input.description ?? '');
     this.status = validateStatus(input.status ?? 'todo');
     this.priority = validatePriority(input.priority ?? 'medium');
+    this.category = validateCategory(input.category ?? 'general');
     this.createdAt = Object.hasOwn(input, 'createdAt') ? validateIsoTimestamp(input.createdAt, 'createdAt') : now;
     this.updatedAt = Object.hasOwn(input, 'updatedAt') ? validateIsoTimestamp(input.updatedAt, 'updatedAt') : this.createdAt;
   }
@@ -61,6 +64,9 @@ export class Task {
     if (Object.hasOwn(normalizedPatch, 'priority')) {
       this.priority = normalizedPatch.priority;
     }
+    if (Object.hasOwn(normalizedPatch, 'category')) {
+      this.category = normalizedPatch.category;
+    }
 
     this.updatedAt = new Date().toISOString();
     return this;
@@ -76,14 +82,15 @@ export class Task {
       title: this.title,
       description: this.description,
       status: this.status,
-      priority: this.priority
+      priority: this.priority,
+      category: this.category
     });
   }
 
   /**
    * Converts the task to a plain serializable object.
    *
-   * @returns {{id: string, title: string, description: string, status: 'todo'|'in-progress'|'done', priority: 'low'|'medium'|'high', createdAt: string, updatedAt: string}} Task snapshot.
+  * @returns {{id: string, title: string, description: string, status: 'todo'|'in-progress'|'done', priority: 'low'|'medium'|'high', category: string, createdAt: string, updatedAt: string}} Task snapshot.
    */
   toJSON() {
     return {
@@ -92,6 +99,7 @@ export class Task {
       description: this.description,
       status: this.status,
       priority: this.priority,
+      category: this.category,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };

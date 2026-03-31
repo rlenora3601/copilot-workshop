@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  validateCategory,
   validateTitle,
   validateDescription,
   validateStatus,
@@ -70,6 +71,35 @@ describe('validateDescription', () => {
 
   test('throws TypeError when description exceeds 500 characters', () => {
     assert.throws(() => validateDescription('b'.repeat(501)), TypeError);
+  });
+});
+
+describe('validateCategory', () => {
+  test('returns default category when called without arguments', () => {
+    assert.equal(validateCategory(), 'general');
+  });
+
+  test('trims whitespace from category', () => {
+    assert.equal(validateCategory('  Work  '), 'Work');
+  });
+
+  test('accepts category of exactly 50 characters', () => {
+    const exactly50 = 'c'.repeat(50);
+    assert.equal(validateCategory(exactly50), exactly50);
+  });
+
+  test('throws TypeError when category is not a string', () => {
+    assert.throws(() => validateCategory(42), TypeError);
+    assert.throws(() => validateCategory(null), TypeError);
+  });
+
+  test('throws TypeError when category is empty', () => {
+    assert.throws(() => validateCategory(''), TypeError);
+    assert.throws(() => validateCategory('   '), TypeError);
+  });
+
+  test('throws TypeError when category exceeds 50 characters', () => {
+    assert.throws(() => validateCategory('c'.repeat(51)), TypeError);
   });
 });
 
@@ -186,6 +216,7 @@ describe('validateTaskCreateInput', () => {
     assert.equal(result.description, '');
     assert.equal(result.status, 'todo');
     assert.equal(result.priority, 'medium');
+    assert.equal(result.category, 'general');
   });
 
   test('preserves all explicitly provided optional fields', () => {
@@ -194,11 +225,13 @@ describe('validateTaskCreateInput', () => {
       description: 'Repro steps here',
       priority: 'high',
       status: 'done',
+      category: 'bugs',
     });
     assert.equal(result.title, 'Fix bug');
     assert.equal(result.description, 'Repro steps here');
     assert.equal(result.status, 'done');
     assert.equal(result.priority, 'high');
+    assert.equal(result.category, 'bugs');
   });
 
   test('normalizes title whitespace', () => {
@@ -245,11 +278,13 @@ describe('validateTaskUpdateInput', () => {
       description: 'New desc',
       status: 'in-progress',
       priority: 'high',
+      category: 'work',
     });
     assert.equal(result.title, 'New title');
     assert.equal(result.description, 'New desc');
     assert.equal(result.status, 'in-progress');
     assert.equal(result.priority, 'high');
+    assert.equal(result.category, 'work');
   });
 
   test('trims whitespace from title in patch', () => {
@@ -278,6 +313,10 @@ describe('validateTaskUpdateInput', () => {
   test('throws TypeError when patch contains an unknown field', () => {
     assert.throws(() => validateTaskUpdateInput({ foo: 'bar' }), TypeError);
   });
+
+  test('throws TypeError when category in patch is invalid', () => {
+    assert.throws(() => validateTaskUpdateInput({ category: '' }), TypeError);
+  });
 });
 
 describe('validateFilterOptions', () => {
@@ -305,6 +344,11 @@ describe('validateFilterOptions', () => {
     assert.equal(result.priority, 'low');
   });
 
+  test('includes category when provided', () => {
+    const result = validateFilterOptions({ category: 'work' });
+    assert.equal(result.category, 'work');
+  });
+
   test('throws TypeError when options is null', () => {
     assert.throws(() => validateFilterOptions(null), TypeError);
   });
@@ -319,6 +363,10 @@ describe('validateFilterOptions', () => {
 
   test('throws TypeError when priority value is invalid', () => {
     assert.throws(() => validateFilterOptions({ priority: 'critical' }), TypeError);
+  });
+
+  test('throws TypeError when category value is invalid', () => {
+    assert.throws(() => validateFilterOptions({ category: '' }), TypeError);
   });
 });
 

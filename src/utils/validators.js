@@ -55,6 +55,36 @@ export function validateDescription(description = '') {
 }
 
 /**
+ * Validates and normalizes a task category.
+ *
+ * @param {string} [category='general'] - Raw category input.
+ * @returns {string} Normalized category.
+ * @throws {TypeError} When category is not a string, is empty, or exceeds 50 characters.
+ * @example
+ * validateCategory('  Work  ');
+ * // => 'Work'
+ * @example
+ * validateCategory();
+ * // => 'general'
+ */
+export function validateCategory(category = 'general') {
+  if (typeof category !== 'string') {
+    throw new TypeError('Invalid input: category must be a string.');
+  }
+
+  const normalized = category.trim();
+  if (normalized.length === 0) {
+    throw new TypeError('Invalid input: category must be a non-empty string.');
+  }
+
+  if (normalized.length > 50) {
+    throw new TypeError('Invalid input: category must be 50 characters or fewer.');
+  }
+
+  return normalized;
+}
+
+/**
  * Validates and normalizes task status.
  *
  * @param {string} [status='todo'] - Raw status input.
@@ -138,7 +168,7 @@ export function validateTaskId(id) {
  * Validates and normalizes task create input.
  *
  * @param {object} input - Create input payload.
- * @returns {{title: string, description: string, status: 'todo'|'in-progress'|'done', priority: 'low'|'medium'|'high'}} Normalized create input.
+ * @returns {{title: string, description: string, status: 'todo'|'in-progress'|'done', priority: 'low'|'medium'|'high', category: string}} Normalized create input.
  * @throws {TypeError} When input is not a plain object or fields are invalid.
  * @example
  * validateTaskCreateInput({ title: 'Ship feature' });
@@ -156,7 +186,8 @@ export function validateTaskCreateInput(input) {
     title: validateTitle(input.title),
     description: validateDescription(input.description ?? ''),
     status: validateStatus(input.status ?? 'todo'),
-    priority: validatePriority(input.priority ?? 'medium')
+    priority: validatePriority(input.priority ?? 'medium'),
+    category: validateCategory(input.category ?? 'general')
   };
 }
 
@@ -164,7 +195,7 @@ export function validateTaskCreateInput(input) {
  * Validates and normalizes task update input.
  *
  * @param {object} input - Update patch payload.
- * @returns {{title?: string, description?: string, status?: 'todo'|'in-progress'|'done', priority?: 'low'|'medium'|'high'}} Normalized patch.
+ * @returns {{title?: string, description?: string, status?: 'todo'|'in-progress'|'done', priority?: 'low'|'medium'|'high', category?: string}} Normalized patch.
  * @throws {TypeError} When payload is invalid, empty, or contains unsupported fields.
  * @example
  * validateTaskUpdateInput({ status: 'done' });
@@ -178,7 +209,7 @@ export function validateTaskUpdateInput(input) {
     throw new TypeError('Invalid input: update payload must be a plain object.');
   }
 
-  const allowedKeys = new Set(['title', 'description', 'status', 'priority']);
+  const allowedKeys = new Set(['title', 'description', 'status', 'priority', 'category']);
   const keys = Object.keys(input);
   if (keys.length === 0) {
     throw new TypeError('Invalid input: update payload must include at least one mutable field.');
@@ -203,6 +234,9 @@ export function validateTaskUpdateInput(input) {
   if (Object.hasOwn(input, 'priority')) {
     patch.priority = validatePriority(input.priority);
   }
+  if (Object.hasOwn(input, 'category')) {
+    patch.category = validateCategory(input.category);
+  }
 
   return patch;
 }
@@ -211,7 +245,7 @@ export function validateTaskUpdateInput(input) {
  * Validates and normalizes filter options.
  *
  * @param {object} [options={}] - Optional filter payload.
- * @returns {{status?: 'todo'|'in-progress'|'done', priority?: 'low'|'medium'|'high'}} Normalized filters.
+ * @returns {{status?: 'todo'|'in-progress'|'done', priority?: 'low'|'medium'|'high', category?: string}} Normalized filters.
  * @throws {TypeError} When options is not a plain object.
  * @example
  * validateFilterOptions({ status: 'todo' });
@@ -231,6 +265,9 @@ export function validateFilterOptions(options = {}) {
   }
   if (Object.hasOwn(options, 'priority')) {
     normalized.priority = validatePriority(options.priority);
+  }
+  if (Object.hasOwn(options, 'category')) {
+    normalized.category = validateCategory(options.category);
   }
 
   return normalized;

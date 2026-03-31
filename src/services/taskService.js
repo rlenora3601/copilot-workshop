@@ -58,6 +58,25 @@ export function listTasks(options = {}) {
 }
 
 /**
+ * Returns tasks that match a category value.
+ *
+ * @param {string} category - Category value.
+ * @returns {Array<{id: string, title: string, description: string, status: string, priority: string, category: string, createdAt: string, updatedAt: string}>} Task snapshots.
+ */
+export function filterTasksByCategory(category) {
+  return listTasks({ category });
+}
+
+/**
+ * Lists all unique categories currently present in tasks.
+ *
+ * @returns {string[]} Sorted unique category values.
+ */
+export function listCategories() {
+  return [...new Set(state.tasks.map((task) => task.category))].sort((a, b) => a.localeCompare(b));
+}
+
+/**
  * Updates a task by id.
  *
  * @param {string} id - Task id.
@@ -94,6 +113,10 @@ function applyFilters(tasks, filters) {
 
   if (filters.priority) {
     filtered = filtered.filter((task) => task.priority === filters.priority);
+  }
+
+  if (filters.category) {
+    filtered = filtered.filter((task) => task.category === filters.category);
   }
 
   return filtered;

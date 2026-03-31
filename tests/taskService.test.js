@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   createTask,
   deleteTask,
+  filterTasksByCategory,
   getTaskById,
+  listCategories,
   listTasks,
   updateTask,
 } from '../src/services/taskService.js';
@@ -28,11 +30,22 @@ describe('createTask', () => {
       description: 'Some details',
       status: 'in-progress',
       priority: 'high',
+      category: 'development',
     });
     try {
       assert.equal(task.description, 'Some details');
       assert.equal(task.status, 'in-progress');
       assert.equal(task.priority, 'high');
+      assert.equal(task.category, 'development');
+    } finally {
+      deleteTask(task.id);
+    }
+  });
+
+  test('applies default category when omitted', () => {
+    const task = createTask({ title: 'No category provided' });
+    try {
+      assert.equal(task.category, 'general');
     } finally {
       deleteTask(task.id);
     }
@@ -100,7 +113,7 @@ describe('getTaskById', () => {
 
   test('returned snapshot includes all Task fields', () => {
     const task = getTaskById(taskId);
-    for (const field of ['id', 'title', 'description', 'status', 'priority', 'createdAt', 'updatedAt']) {
+    for (const field of ['id', 'title', 'description', 'status', 'priority', 'category', 'createdAt', 'updatedAt']) {
       assert.ok(Object.hasOwn(task, field), `missing field: ${field}`);
     }
   });
@@ -126,11 +139,11 @@ describe('listTasks', () => {
   let todoLowId, todoHighId, doneMediumId;
 
   before(async () => {
-    todoLowId = createTask({ title: 'List:todo-low', status: 'todo', priority: 'low' }).id;
+    todoLowId = createTask({ title: 'List:todo-low', status: 'todo', priority: 'low', category: 'ops' }).id;
     await new Promise((r) => setTimeout(r, 5));
-    todoHighId = createTask({ title: 'List:todo-high', status: 'todo', priority: 'high' }).id;
+    todoHighId = createTask({ title: 'List:todo-high', status: 'todo', priority: 'high', category: 'work' }).id;
     await new Promise((r) => setTimeout(r, 5));
-    doneMediumId = createTask({ title: 'List:done-medium', status: 'done', priority: 'medium' }).id;
+    doneMediumId = createTask({ title: 'List:done-medium', status: 'done', priority: 'medium', category: 'work' }).id;
   });
 
   after(() => {
@@ -179,6 +192,16 @@ describe('listTasks', () => {
     assert.ok(result.some((t) => t.id === todoHighId));
   });
 
+  test('filters by category value', () => {
+    const workTasks = listTasks({ category: 'work' });
+    assert.ok(workTasks.length >= 2);
+    assert.ok(workTasks.every((t) => t.category === 'work'));
+    const ids = workTasks.map((t) => t.id);
+    assert.ok(ids.includes(todoHighId));
+    assert.ok(ids.includes(doneMediumId));
+    assert.ok(!ids.includes(todoLowId));
+  });
+
   test('sorts by priority descending: high appears before low', () => {
     const sorted = listTasks({ status: 'todo', sortBy: 'priority', direction: 'desc' });
     const highIdx = sorted.findIndex((t) => t.id === todoHighId);
@@ -224,6 +247,10 @@ describe('listTasks', () => {
     assert.throws(() => listTasks({ status: 'invalid' }), TypeError);
   });
 
+  test('throws TypeError for invalid category filter value', () => {
+    assert.throws(() => listTasks({ category: '' }), TypeError);
+  });
+
   test('returns plain object snapshots, not class instances', () => {
     const all = listTasks();
     for (const task of all) {
@@ -260,6 +287,12 @@ describe('updateTask', () => {
     assert.equal(updated.description, 'New desc');
   });
 
+  test('updates category field and persists it', () => {
+    const updated = updateTask(taskId, { category: 'work' });
+    assert.equal(updated.category, 'work');
+    assert.equal(getTaskById(taskId).category, 'work');
+  });
+
   test('updatedAt is refreshed after update', () => {
     const snapshot1 = getTaskById(taskId);
     updateTask(taskId, { status: 'done' });
@@ -286,6 +319,10 @@ describe('updateTask', () => {
 
   test('throws TypeError when patch contains an immutable field', () => {
     assert.throws(() => updateTask(taskId, { id: 'new-id' }), TypeError);
+  });
+
+  test('throws TypeError when category in patch is invalid', () => {
+    assert.throws(() => updateTask(taskId, { category: '' }), TypeError);
   });
 
   test('throws TypeError when the id is not a string', () => {
@@ -328,5 +365,40 @@ describe('deleteTask', () => {
 
   test('throws TypeError when id is an empty string', () => {
     assert.throws(() => deleteTask(''), TypeError);
+  });
+});
+
+describe('category helpers', () => {
+  let alphaId;
+  let betaId;
+  let gammaId;
+
+  before(() => {
+    alphaId = createTask({ title: 'Cat alpha', category: 'alpha' }).id;
+    betaId = createTask({ title: 'Cat beta', category: 'beta' }).id;
+    gammaId = createTask({ title: 'Cat alpha 2', category: 'alpha' }).id;
+  });
+
+  after(() => {
+    for (const id of [alphaId, betaId, gammaId]) {
+      try { deleteTask(id); } catch { /* already deleted */ }
+    }
+  });
+
+  test('filterTasksByCategory returns only tasks in the requested category', () => {
+    const alphaTasks = filterTasksByCategory('alpha');
+    assert.ok(alphaTasks.length >= 2);
+    assert.ok(alphaTasks.every((task) => task.category === 'alpha'));
+  });
+
+  test('filterTasksByCategory throws TypeError for invalid category input', () => {
+    assert.throws(() => filterTasksByCategory(''), TypeError);
+  });
+
+  test('listCategories returns unique sorted category values', () => {
+    const categories = listCategories();
+    assert.ok(categories.includes('alpha'));
+    assert.ok(categories.includes('beta'));
+    assert.equal(new Set(categories).size, categories.length);
   });
 });

@@ -8,6 +8,7 @@ describe('Task constructor - success paths', () => {
     assert.equal(task.title, 'My task');
     assert.equal(task.status, 'todo');
     assert.equal(task.priority, 'medium');
+    assert.equal(task.category, 'general');
     assert.equal(task.description, '');
     assert.ok(typeof task.id === 'string' && task.id.length > 0);
     assert.ok(typeof task.createdAt === 'string');
@@ -20,11 +21,18 @@ describe('Task constructor - success paths', () => {
       description: 'Some details',
       status: 'in-progress',
       priority: 'high',
+      category: 'work',
     });
     assert.equal(task.title, 'Full task');
     assert.equal(task.description, 'Some details');
     assert.equal(task.status, 'in-progress');
     assert.equal(task.priority, 'high');
+    assert.equal(task.category, 'work');
+  });
+
+  test('trims whitespace from category on construction', () => {
+    const task = new Task({ title: 'Category trim', category: '  personal  ' });
+    assert.equal(task.category, 'personal');
   });
 
   test('trims whitespace from title on construction', () => {
@@ -88,6 +96,14 @@ describe('Task constructor - error paths', () => {
     assert.throws(() => new Task({ title: 'T', priority: 'critical' }), TypeError);
   });
 
+  test('throws TypeError when category is empty after trim', () => {
+    assert.throws(() => new Task({ title: 'T', category: '   ' }), TypeError);
+  });
+
+  test('throws TypeError when category exceeds 50 characters', () => {
+    assert.throws(() => new Task({ title: 'T', category: 'x'.repeat(51) }), TypeError);
+  });
+
   test('throws TypeError when createdAt is not a valid ISO string', () => {
     assert.throws(() => new Task({ title: 'T', createdAt: 'not-a-date' }), TypeError);
   });
@@ -106,9 +122,10 @@ describe('Task.update() - success paths', () => {
 
   test('updates multiple fields at once', () => {
     const task = new Task({ title: 'Multi', status: 'todo', priority: 'low' });
-    task.update({ status: 'done', priority: 'high' });
+    task.update({ status: 'done', priority: 'high', category: 'work' });
     assert.equal(task.status, 'done');
     assert.equal(task.priority, 'high');
+    assert.equal(task.category, 'work');
   });
 
   test('updates description field', () => {
@@ -150,6 +167,11 @@ describe('Task.update() - error paths', () => {
   test('throws TypeError for unsupported field "createdAt" in patch', () => {
     const task = new Task({ title: 'Test' });
     assert.throws(() => task.update({ createdAt: new Date().toISOString() }), TypeError);
+  });
+
+  test('throws TypeError when category value in patch is invalid', () => {
+    const task = new Task({ title: 'Test' });
+    assert.throws(() => task.update({ category: '' }), TypeError);
   });
 
   test('throws TypeError when patch is not a plain object', () => {
@@ -202,6 +224,11 @@ describe('Task.clone()', () => {
     assert.equal(task.clone().priority, 'high');
   });
 
+  test('cloned task copies category', () => {
+    const task = new Task({ title: 'T', category: 'ops' });
+    assert.equal(task.clone().category, 'ops');
+  });
+
   test('mutating the clone does not affect the original', () => {
     const task = new Task({ title: 'Original' });
     const cloned = task.clone();
@@ -227,6 +254,7 @@ describe('Task.toJSON()', () => {
     assert.ok(Object.hasOwn(json, 'description'));
     assert.ok(Object.hasOwn(json, 'status'));
     assert.ok(Object.hasOwn(json, 'priority'));
+    assert.ok(Object.hasOwn(json, 'category'));
     assert.ok(Object.hasOwn(json, 'createdAt'));
     assert.ok(Object.hasOwn(json, 'updatedAt'));
   });
